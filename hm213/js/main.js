@@ -5,7 +5,7 @@ let canvas, ctx, textDecoder;
 let height;
 
 const MAX_SCREEN_WIDTH = 104;
-const MAX_SCREEN_HEIGHT = 212;
+const MAX_SCREEN_HEIGHT = 216;
 const EpdCmd = {
   SET_PINS:  0x00,
   INIT:      0x01,
@@ -28,7 +28,7 @@ const EpdCmd = {
 DJS_DATE:0x31,
 TIME_SHOW:0xE1,
 VERT_COLOR:0xE3,
-
+SENDCLASS:0x32,
 };
 
 
@@ -46,9 +46,10 @@ VERT_COLOR:0xE3,
   
 
 const canvasSizes = [
+  { name: '64_16', width: 64, height: 16 },
   { name: '72_22', width: 72, height: 22 },  
  { name: '128_80', width: 128, height: 80 },
- { name: '212_104', width: 212, height: 104 }
+ { name: '216_104', width: 216, height: 104 }
 ];
 
 
@@ -624,7 +625,7 @@ document.body.onload = () => {
   updateButtonStatus();
   checkDebugMode();
 }
-async function sendDateTimeToLowerMachine() {
+async function sendDateTimeToLowerMachine(mode) {
   const targetDateInput = document.getElementById('targetDate');
  
   // 验证输入
@@ -641,7 +642,7 @@ async function sendDateTimeToLowerMachine() {
   const djsm=targetDateTime.getMonth()& 0xff;
   const djsd=targetDateTime.getDate()& 0xff;
  
-  const djsdate = [djsyearh,djsyearl,djsm,djsd];
+  const djsdate = [djsyearh,djsyearl,djsm,djsd,mode];
       
   await write(EpdCmd.DJS_DATE,djsdate);
 
@@ -682,3 +683,31 @@ let isAlertShowing = false; // 防止重复弹窗的标记
             updateImage(false);
 
         }
+
+    async function sendclass() {
+    const input = document.getElementById('cmdCLASS').value.trim();
+    
+    if (!input) {
+        alert('请输入5天课程数据');
+        return;
+    }
+
+    const dayCodes = input.split(',');
+    if (dayCodes.length !== 5) {
+        alert("输入格式错误！请输入5天课程数据，用逗号分隔（如：12365ac76,5466dd123,12365ac70,12365ac76,12365ac76）");
+        return;
+    }
+
+    const payload = [];
+    for (let i = 0; i < 5; i++) {
+        const code = dayCodes[i];
+        if (code.length !== 9) {
+            alert(`第${i+1}天数据错误！`);
+            return;
+        }
+        for (let char of code) payload.push(parseInt(char, 16));
+    }
+
+    await write(EpdCmd.SENDCLASS, payload);
+    await write(EpdCmd.REFRESH);
+}

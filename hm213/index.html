@@ -29,8 +29,11 @@
             
             <div class="flex-container" style="margin-top: 1rem;">
                 <div class="flex-group">               
-                    <button id="sendDateTime" type="button" class="primary" onclick="sendDateTimeToLowerMachine()">发送倒计时</button>
+                    <button id="sendDateTime1" type="button" class="primary" onclick="sendDateTimeToLowerMachine(1)">发送倒计时1</button>
                 </div> 
+				<div class="flex-group">               
+                    <button id="sendDateTime2" type="button" class="primary" onclick="sendDateTimeToLowerMachine(2)">发送倒计时2</button>
+                </div>
             </div>
         </fieldset>
         <fieldset>
@@ -69,6 +72,12 @@
                     <input type="text" id="cmdTXT" value="">
                     <button id="sendcmdbutton" type="button" class="primary" onclick="sendcmd()">发送命令</button>
                 </div>
+				<div class="flex-container debug" style="width: 100%;">
+					<div class="flex-group" style="width: 100%;">
+						<input type="text" id="cmdCLASS" value="" style="flex: 1; min-width: 0;">
+						<button id="sendclassbutton" type="button" class="primary" onclick="sendclass()">发送课表</button>
+					</div>
+				</div>
             </div>
 			<div id="log"></div>
         </fieldset>
@@ -81,10 +90,11 @@
 			<div class="flex-container options">
 				<div class="flex-group debug">
 					<label for="canvasSize">画布尺寸：</label>
-					<select id="canvasSize" onchange="updateCanvasSize()">                                                                                            
+					<select id="canvasSize" onchange="updateCanvasSize()"> 
+						<option value="64_16">64x16</option>                                                                                           
 						<option value="72_22">72x22</option>
 						<option value="128_80" selected>128x80</option>
-						<option value="212_104">212x104</option>														
+						<option value="216_104">216x104</option>														
 					</select>
 				</div>				
 				<div class="flex-group debug">
