@@ -1,0 +1,217 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>电子墨水屏蓝牙控制器</title>
+    <link rel="stylesheet" href="css/main.css?v=20250607">
+    <!-- 新增：引入Font Awesome用于日历图标 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+
+
+<body>
+    <div class="main">
+        <h3>电子墨水屏蓝牙控制器</h3>
+<fieldset>
+            <legend>倒计日期设置</legend>
+            <div class="flex-container">
+                <div class="flex-group" style="flex: 1;">
+                    <label for="targetDate" class="block text-sm font-medium text-gray-700 mb-2">选择目标日期</label>
+                    <div class="relative">
+                        <input type="date" id="targetDate" class="w-full px-4 py-2 rounded border border-gray-300">
+                        <div class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">
+                            <i class="fa fa-calendar"></i>
+                        </div>
+                    </div>
+                </div>  
+            </div>
+            
+            <div class="flex-container" style="margin-top: 1rem;">
+                <div class="flex-group">               
+                    <button id="sendDateTime" type="button" class="primary" onclick="sendDateTimeToLowerMachine()">发送倒计时</button>
+                </div> 
+            </div>
+        </fieldset>
+        <fieldset>
+            <legend>蓝牙连接</legend>
+            <div class="flex-container">
+                <div class="flex-group">
+                    <button id="connectbutton" type="button" class="primary" onclick="preConnect()">连接</button>
+                    <button id="reconnectbutton" type="button" class="secondary" onclick="reConnect()">重连</button>
+					<button type="button" class="secondary" onclick="clearLog()">清空日志</button>
+                </div>
+				<div class="flex-group debug">
+					<label for="epddriver">驱动</label>
+					<select id="epddriver" onchange="updateDitcherOptions()">
+						<option value="01" data-color="blackWhiteColor" data-size="4.2_400_300">UC8176/UC8276(黑白)</option>
+						<option value="03" data-color="threeColor" data-size="4.2_400_300">UC8176/UC8276(三色)</option>
+						<option value="04" data-color="blackWhiteColor" data-size="4.2_400_300">SSD1619/SSD1683(黑白)</option>
+						<option value="02" data-color="threeColor" data-size="4.2_400_300">SSD1619/SSD1683(三色)</option>
+						<option value="05" data-color="fourColor" data-size="4.2_400_300">JD79668(四色)</option>
+					</select>
+				</div>
+				<div class="flex-group debug">
+					<label for="epdpins">引脚</label>
+					<input id="epdpins" type="text" value="">
+					<button id="setDriverbutton" type="button" class="primary" onclick="setDriver()">确认</button>
+				</div>
+                <div class="flex-group">
+                    <button id="calendarmodebutton" type="button" class="primary" onclick="syncTime(1)">日历模式1</button>
+					<button id="calendarmodebutton" type="button" class="primary" onclick="syncTime(3)">日历模式2</button>
+                    <button id="clockmodebutton" type="button" class="primary" onclick="syncTime(2)">时钟模式</button>
+					<button id="clearscreenbutton" type="button" class="secondary" onclick="clearScreen()">清除屏幕</button>
+                </div>
+                <div class="flex-group debug">
+                    <input type="text" id="cmdTXT" value="">
+                    <button id="sendcmdbutton" type="button" class="primary" onclick="sendcmd()">发送命令</button>
+                </div>
+            </div>
+			<div id="log"></div>
+        </fieldset>
+
+		<fieldset>
+        	<legend>蓝牙传图</legend>
+			<div class="flex-container">
+				<input type="file" id="image_file" onchange="updateImage(true)" accept=".png,.jpg,.bmp,.webp,.jpeg">
+			</div>
+			<div class="flex-container options">
+				<div class="flex-group debug">
+					<label for="canvasSize">画布尺寸：</label>
+					<select id="canvasSize" onchange="updateCanvasSize()">                                                                                            
+						<option value="2.0_144_20">2.0 (144x20)</option>
+						<option value="1.70_144_170">1.70 (144x170)</option>					
+						<option value="4.2_400_300" selected>4.2 (400x300)</option>					
+					</select>
+				</div>				
+				<div class="flex-group debug">
+					<label for="ditherMode">颜色模式：</label>
+					<select id="ditherMode" onchange="updateImage(false)">
+						<option value="blackWhiteColor">双色(黑白)</option>
+						<option value="threeColor">三色(黑白红)</option>
+						<option value="fourColor">四色(黑白红黄)</option>
+						<option value="sixColor">六色(黑白红黄蓝绿)</option>
+					</select>
+				</div>
+				<div class="flex-group">
+					<label for="ditherType">抖动算法：</label>
+					<select id="ditherType" onchange="updateImage(false)">
+						<option value="floydSteinberg">Floyd-Steinberg</option>
+						<option value="atkinson">Atkinson</option>
+						<option value="bayer">Bayer</option>
+						<option value="stucki">Stucki</option>
+						<option value="jarvis">Jarvis-Judice-Ninke</option>
+					</select>
+				</div>
+				<div class="flex-group">
+					<label for="ditherStrength">抖动强度：</label>
+					<input type="range" min="0" max="5" step="0.1" value="1.0" id="ditherStrength" oninput="updateImage(false)">
+				</div>
+				<div class="flex-group">
+					<label for="contrast">对比度：</label>
+					<input type="range" min="0.5" max="2" step="0.1" value="1.2" id="contrast" oninput="updateImage(false)">
+				</div>
+			</div>
+			<div class="flex-container options">
+				<div class="flex-group debug">
+					<label for="mtusize">MTU：</label>
+					<input type="number" id="mtusize" value="244" min="0" max="255">
+					<label for="interleavedcount">确认间隔：</label>
+					<input type="number" id="interleavedcount" value="50" min="0" max="500">
+				</div>
+			</div>
+			<div class="status-bar"><b>状态：</b><span id="status"></span></div>
+			<div class="flex-container">
+				<div class="flex-group">
+					<button id="clearcanvasbutton" type="button" class="secondary" onclick="clearCanvas()">清除画布</button>
+					<button id="downloadArray" type="button" class="secondary debug" onclick="downloadDataArray()">下载数组</button>
+					<button id="sendimgbutton" type="button" class="primary" onclick="sendimg()">发送图片</button>
+				</div>
+			</div>
+			<div class="canvas-container">
+				<div class="canvas-title"></div>
+				<canvas id="canvas" width="400" height="300"></canvas>
+				<div class="flex-container canvas-tools">
+					<div class="flex-group">
+						<button id="brush-mode" title="画笔" class="tool-button">✏️</button>
+						<button id="eraser-mode" title="橡皮擦" class="tool-button">🧽</button>
+						<button id="text-mode" title="添加文字" class="tool-button">T</button>
+					</div>
+					<div class="flex-group brush-tools">
+						<label for="brush-color">画笔：</label>
+						<select id="brush-color">
+                            <option value="#000000">黑色</option>
+                            <option value="#FF0000">红色</option>
+                            <option value="#FFFF00">黄色</option>
+							<option value="#00FF00">绿色</option>
+							<option value="#0000FF">蓝色</option>
+                            <option value="#FFFFFF">白色</option>
+                        </select>
+						<label for="brush-size">粗细：</label>
+						<input type="number" id="brush-size" value="2" min="1" max="100">
+					</div>
+				</div>
+				<div class="flex-container canvas-tools">
+					<div class="flex-group text-tools">
+						<label for="font-family">字体：</label>
+						<select id="font-family">
+								<option value="Arial">Arial</option>
+								<option value="sans-serif">Sans-serif</option>
+								<option value="monospace">Monospace</option>
+								<option value="SimSun">宋体</option>
+								<option value="SimHei">黑体</option>
+								<option value="Microsoft Yahei">微软雅黑</option>
+								<option value="Microsoft JhengHei">微软正黑体</option>
+								<option value="KaiTi">楷体</option>
+								<option value="NSimSun">新宋体</option>
+								<option value="FangSong">仿宋</option>
+								<option value="YouYuan">幼圆</option>
+								<option value="LiSu">隶书</option>
+								<option value="STHeiti">华文黑体</option>
+								<option value="STXihei">华文细黑</option>
+								<option value="STKaiti">华文楷体</option>
+								<option value="STSong">华文宋体</option>
+								<option value="STFangsong">华文仿宋</option>
+								<option value="STZhongsong">华文中宋</option>
+								<option value="STHupo">华文琥珀</option>
+								<option value="STXinwei">华文新魏</option>
+								<option value="STLiti">华文隶书</option>
+								<option value="STXingkai">华文行楷</option>
+								<option value="FZShuTi">方正舒体</option>
+								<option value="FZYaoti">方正姚体</option>
+								<option value="PingFang SC">苹方</option>
+								<option value="Source Han Sans CN">思源黑体</option>
+								<option value="Source Han Serif SC">思源宋体</option>
+								<option value="WenQuanYi Micro Hei">文泉驿微米黑</option>
+							</optgroup>
+						</select>
+						<label for="font-size">大小：</label>
+						<input type="number" id="font-size" value="16" min="1" max="100">
+					</div>
+					<div class="flex-group text-tools">
+						
+						<input type="text" id="text-input" placeholder="输入文字" style="width:150px">
+					
+						
+						<button id="text-bold" title="粗体">B</button>
+						<button id="text-italic" title="斜体">I</button>
+						<button id="add-text-btn" class="primary">添加文字</button>
+					</div>
+				</div>
+			</div>
+        </fieldset>
+		<div class="footer">
+			<span class="copy">&copy; 2025 tsl0922.</span>
+			<span class="links">
+				<a href="https://github.com/tsl0922/EPD-nRF5">Github</a>
+				<a href="https://qm.qq.com/q/SckzhfDxuu">交流群</a>
+				<a href="?debug=true" id="debug-toggle">开发模式</a>
+			</span>
+		</div>
+    </div>
+    <script type="text/javascript" src="js/dithering.js?v=20250607"></script>
+    <script type="text/javascript" src="js/paint.js?v=20250607"></script>
+    <script type="text/javascript" src="js/main.js?v=20250607"></script>
+</body>
+
+</html>
