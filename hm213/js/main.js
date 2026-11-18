@@ -29,6 +29,7 @@ DJS_DATE:0x31,
 TIME_SHOW:0xE1,
 VERT_COLOR:0xE3,
 SENDCLASS:0x32,
+  SHOW_COURSE:0x36,
 };
 
 
@@ -710,4 +711,8 @@ let isAlertShowing = false; // 防止重复弹窗的标记
 
     await write(EpdCmd.SENDCLASS, payload);
     await write(EpdCmd.REFRESH);
+}
+async function showcourse()
+{
+  await write(EpdCmd.SHOW_COURSE);
 }
