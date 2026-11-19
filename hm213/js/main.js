@@ -29,7 +29,7 @@ DJS_DATE:0x31,
 TIME_SHOW:0xE1,
 VERT_COLOR:0xE3,
 SENDCLASS:0x32,
-  SHOW_COURSE:0x36,
+SHOW_COURSE:0x36,
 };
 
 
@@ -50,7 +50,10 @@ const canvasSizes = [
   { name: '64_16', width: 64, height: 16 },
   { name: '72_22', width: 72, height: 22 },  
  { name: '128_80', width: 128, height: 80 },
- { name: '216_104', width: 216, height: 104 }
+ { name: '216_104', width: 216, height: 104 },
+ { name: '256_128', width: 256, height: 128 },
+ { name: '168_112', width: 168, height: 104 },
+ { name: '32_25', width: 32, height: 25 }
 ];
 
 
@@ -626,6 +629,10 @@ document.body.onload = () => {
   updateButtonStatus();
   checkDebugMode();
 }
+async function showcourse()
+{
+  await write(EpdCmd.SHOW_COURSE);
+}
 async function sendDateTimeToLowerMachine(mode) {
   const targetDateInput = document.getElementById('targetDate');
  
@@ -711,8 +718,4 @@ let isAlertShowing = false; // 防止重复弹窗的标记
 
     await write(EpdCmd.SENDCLASS, payload);
     await write(EpdCmd.REFRESH);
-}
-async function showcourse()
-{
-  await write(EpdCmd.SHOW_COURSE);
 }
