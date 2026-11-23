@@ -29,10 +29,10 @@
             
             <div class="flex-container" style="margin-top: 1rem;">
                 <div class="flex-group">               
-                    <button id="sendDateTime1" type="button" class="primary" onclick="sendDateTimeToLowerMachine(1)">发送倒计时1</button>
+                    <button id="sendDateTime1" type="button" class="primary" onclick="sendDateTimeToLowerMachine(1)">图片倒计时</button>
                 </div> 
 				<div class="flex-group">               
-                    <button id="sendDateTime2" type="button" class="primary" onclick="sendDateTimeToLowerMachine(2)">发送倒计时2</button>
+                    <button id="sendDateTime2" type="button" class="primary" onclick="sendDateTimeToLowerMachine(2)">首页倒计时</button>
                 </div>
             </div>
         </fieldset>
@@ -67,6 +67,7 @@
 					<button id="clockmodebutton" type="button" class="primary" onclick="syncTime(5)">全屏图片</button>
 					<button id="clearscreenbutton" type="button" class="secondary" onclick="clearScreen()">清除屏幕</button>
 					<button id="calendarmodebutton" type="button" class="primary" onclick="vertcolor()">时间反色</button>
+					<button id="showcoursebutton" type="button" class="primary" onclick="showcourse()">课程显示</button>
                 </div>
                 <div class="flex-group debug">
                     <input type="text" id="cmdTXT" value="">
@@ -91,10 +92,13 @@
 				<div class="flex-group debug">
 					<label for="canvasSize">画布尺寸：</label>
 					<select id="canvasSize" onchange="updateCanvasSize()"> 
-						<option value="64_16">64x16</option>                                                                                           
-						<option value="72_22">72x22</option>
-						<option value="128_80" selected>128x80</option>
-						<option value="216_104">216x104</option>														
+						<option value="80_18">80x18首页</option>                                                                                           
+						<option value="72_22">72x22图片</option>
+						<option value="128_80" selected>128x80l图片</option>
+						<option value="216_104">216x104l全屏</option>
+						<option value="256_128">256x128h全屏</option>
+						<option value="88_128">88x128h倒计时</option>	
+						<option value="168_112">168x104h图片</option>													
 					</select>
 				</div>				
 				<div class="flex-group debug">
@@ -139,7 +143,7 @@
 					<button id="clearcanvasbutton" type="button" class="secondary" onclick="clearCanvas()">清除画布</button>
 					<button id="downloadArray" type="button" class="secondary debug" onclick="downloadDataArray()">下载数组</button>
 					<button id="sendimgbutton" type="button" class="primary" onclick="sendimg()">发送图片</button>
-					
+					<button id="invert-canvas-btn" title="画布黑白反色" type="button" class="primary" onclick="invertCanvas()">反色</button>
 				</div>
 			</div>
 			<div class="canvas-container">

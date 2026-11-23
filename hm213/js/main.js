@@ -3,6 +3,7 @@ let epdService, epdCharacteristic;
 let startTime, msgIndex, appVersion;
 let canvas, ctx, textDecoder;
 let height;
+let width;
 
 const MAX_SCREEN_WIDTH = 104;
 const MAX_SCREEN_HEIGHT = 216;
@@ -25,10 +26,12 @@ const EpdCmd = {
   CFG_ERASE:  0x99,
  SET_IMG_SIZE:0x33,
  IMG_HEIGHT:0x38,
+ IMG_WIDTH: 0x39, // 新增
 DJS_DATE:0x31,
 TIME_SHOW:0xE1,
 VERT_COLOR:0xE3,
 SENDCLASS:0x32,
+SHOW_COURSE:0x36,
 };
 
 
@@ -46,10 +49,13 @@ SENDCLASS:0x32,
   
 
 const canvasSizes = [
-  { name: '64_16', width: 64, height: 16 },
+  { name: '80_18', width: 80, height: 18 },
   { name: '72_22', width: 72, height: 22 },  
  { name: '128_80', width: 128, height: 80 },
- { name: '216_104', width: 216, height: 104 }
+ { name: '216_104', width: 216, height: 104 },
+ { name: '256_128', width: 256, height: 128 },
+ { name: '168_112', width: 168, height: 104 },
+ { name: '88_128', width: 88, height: 128 }
 ];
 
 
@@ -218,8 +224,15 @@ async function sendimg() {
 const  heightL=height &0xff; 
 const imgheight=new Uint8Array([heightH,heightL]);
 await write(EpdCmd.IMG_HEIGHT,imgheight);
+await delay(80);
 
- 
+ // ========= 新增：下发宽度 canvas.width 就是图片真实宽度 88 / 256 =========
+  const widthH = (width >> 8) & 0xff;
+  const widthL = width & 0xff;
+  const imgwidth = new Uint8Array([widthH, widthL]);
+  await write(EpdCmd.IMG_WIDTH, imgwidth);
+await delay(80);
+  
   startTime = new Date().getTime();
   const status = document.getElementById("status");
   status.parentElement.style.display = "block";
@@ -521,6 +534,7 @@ function updateCanvasSize() {
   canvas.width = selectedSize.width;
   canvas.height = selectedSize.height;
   height=selectedSize.height;
+  width = selectedSize.width; // ✅ 同步给全局width
 
   updateImage(false);
 }
@@ -532,7 +546,9 @@ function updateCanvasSizeFree() {
 
   canvas.width = parseInt(document.getElementById('width').value);
   canvas.height = parseInt(document.getElementById('height').value);
-
+// 补上这两行
+  width = canvas.width;
+  height = canvas.height;
   updateImage(false);
 }
 function updateDitcherOptions() {
@@ -625,6 +641,10 @@ document.body.onload = () => {
   updateButtonStatus();
   checkDebugMode();
 }
+async function showcourse()
+{
+  await write(EpdCmd.SHOW_COURSE);
+}
 async function sendDateTimeToLowerMachine(mode) {
   const targetDateInput = document.getElementById('targetDate');
  
@@ -710,4 +730,21 @@ let isAlertShowing = false; // 防止重复弹窗的标记
 
     await write(EpdCmd.SENDCLASS, payload);
     await write(EpdCmd.REFRESH);
+}
+// 画布黑白反色函数
+function invertCanvas() {
+    if (!canvas || !ctx) return;
+    const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    const data = imgData.data;
+    for (let i = 0; i < data.length; i += 4) {
+        const r = data[i];
+        // 接近白色就当成255，其余当成0
+        const isWhite = r > 127;
+        const val = isWhite ? 0 : 255;
+        data[i] = val;
+        data[i+1] = val;
+        data[i+2] = val;
+    }
+    ctx.putImageData(imgData, 0, 0);
+    addLog("画布已黑白反色（二值翻转，无二次抖动）");
 }
