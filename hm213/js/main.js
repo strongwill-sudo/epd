@@ -27,6 +27,12 @@ let dragStartMouseY = 0;
 let dragStartOffsetX = 0;
 let dragStartOffsetY = 0;
 
+//====双指缩放新增变量====
+let touchTwoStartDist = 0;
+let touchTwoStartScale = 1.0;
+let touchTwoStartOffsetX = 0;
+let touchTwoStartOffsetY = 0;
+
 const MAX_SCREEN_WIDTH = 104;
 const MAX_SCREEN_HEIGHT = 216;
 const EpdCmd = {
@@ -720,6 +726,64 @@ document.body.onload = () => {
     }
     canvas.addEventListener('mouseup', endImageDrag);
     canvas.addEventListener('mouseleave', endImageDrag);
+ // =========新增：双指捏合缩放图片=========
+    canvas
+.addEventListener('touchstart',function(e){
+        if(!origLoadedImage) return;
+        // 当前是画笔/橡皮擦/文字工具，不做图片缩放拖拽
+        if(currentTool === "brush" || currentTool === "eraser" || currentTool === "text") return;
+
+        if(e.touches.length === 2){
+            e
+.preventDefault();
+            // 计算两指之间距离
+            const t1 = e.touches[0];
+            const t2 = e.touches[1];
+            const dx = t2.clientX - t1.clientX;
+            const dy = t2.clientY - t1.clientY;
+            touchTwoStartDist 
+= Math.sqrt(dx*dx + dy*dy);
+            touchTwoStartScale 
+= imgScale;
+            touchTwoStartOffsetX 
+= imgOffsetX;
+            touchTwoStartOffsetY 
+= imgOffsetY;
+        }
+    });
+
+    canvas
+.addEventListener('touchmove',function(e){
+        if(!origLoadedImage) return;
+        if(currentTool === "brush" || currentTool === "eraser" || currentTool === "text") return;
+        if(e.touches.length === 2){
+            e
+.preventDefault();
+            const t1 = e.touches[0];
+            const t2 = e.touches[1];
+            const dx = t2.clientX - t1.clientX;
+            const dy = t2.clientY - t1.clientY;
+            const dist = Math.sqrt(dx*dx + dy*dy);
+            // 计算缩放倍率
+            const scaleRatio = dist / touchTwoStartDist;
+            imgScale 
+= touchTwoStartScale * scaleRatio;
+            // 限制最大最小缩放，和滚轮保持一致
+            imgScale 
+= Math.max(IMG_SCALE_MIN, Math.min(IMG_SCALE_MAX, imgScale));
+            // 更新界面百分比
+            const scaleInfoDom = document.getElementById('scaleInfo');
+            if(scaleInfoDom) scaleInfoDom.innerText = Math.round(imgScale*100)+"%";
+            redrawImageLayer();
+        }
+    });
+
+    canvas
+.addEventListener('touchend',function(){
+        touchTwoStartDist 
+= 0;
+    });
+
 
 }
 async function showcourse()

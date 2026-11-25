@@ -225,6 +225,10 @@ function handleCanvasClick(e) {
 // Improve touch handling for text placement
 function handleTouchStart(e) {
     e.preventDefault();
+    // 双指：直接退出，交给main.js的双指缩放逻辑，不要进入画笔
+    if(e.touches.length >=2){
+        return;
+    }
     const touch = e.touches[0];
     
     // If in text placement mode, handle as a click
