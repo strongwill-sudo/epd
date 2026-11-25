@@ -144,6 +144,10 @@
 					<button id="downloadArray" type="button" class="secondary debug" onclick="downloadDataArray()">下载数组</button>
 					<button id="sendimgbutton" type="button" class="primary" onclick="sendimg()">发送图片</button>
 					<button id="invert-canvas-btn" title="画布黑白反色" type="button" class="primary" onclick="invertCanvas()">反色</button>
+					<button id="btnRotateImage" title="旋转图像+90°(仅图片)" type="button" class="primary" onclick="rotateImageOnly()">旋转图像</button>
+                   <button id="btnRotateCanvas" title="旋转画布+90°(全部像素)" type="button" class="primary" onclick="rotateCanvas()">旋转画布</button>
+                   <button id="btnResetView" title="重置预览视图" type="button" class="primary" onclick="resetView()">重置</button>
+                   <span style="margin-left:8px;line-height:28px;">缩放:<span id="scaleInfo">100%</span></span>
 				</div>
 			</div>
 			<div class="canvas-container">

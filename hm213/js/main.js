@@ -4,6 +4,28 @@ let startTime, msgIndex, appVersion;
 let canvas, ctx, textDecoder;
 let height;
 let width;
+//=====旋转、预览缩放全局变量=====
+let viewScale = 1.0;
+let viewOffsetX = 0;
+let viewOffsetY = 0;
+const VIEW_SCALE_STEP = 0.1;
+const VIEW_SCALE_MIN = 0.2;
+const VIEW_SCALE_MAX = 5.0;
+let origLoadedImage = null;
+// 仅属于导入图片的变换（只对图片生效，手绘文字完全隔离）
+let imgScale = 1.0;
+let imgOffsetX = 0;
+let imgOffsetY = 0;
+const IMG_SCALE_STEP = 0.1;
+const IMG_SCALE_MIN = 0.05;
+const IMG_SCALE_MAX = 6.0;
+
+// =========新增：图片拖拽变量=========
+let isDragImage = false;
+let dragStartMouseX = 0;
+let dragStartMouseY = 0;
+let dragStartOffsetX = 0;
+let dragStartOffsetY = 0;
 
 const MAX_SCREEN_WIDTH = 104;
 const MAX_SCREEN_HEIGHT = 216;
@@ -574,13 +596,15 @@ function updateImage(clear = false) {
   image.src = URL.createObjectURL(file);
   image.onload = function (event) {
     URL.revokeObjectURL(this.src);
-    ctx.drawImage(image, 0, 0, image.width, image.height, 0, 0, canvas.width, canvas.height);
+    origLoadedImage = image; //保存原图给旋转图像按钮
+    //新图片载入，重置图片缩放偏移
+    imgScale = 1.0;
+    imgOffsetX = 0;
+    imgOffsetY = 0;
+    document.getElementById('scaleInfo').innerText = "100%";
 
-    // Redraw text and lines
-    redrawTextElements();
-    redrawLineSegments();
-
-    convertDithering()
+    redrawImageLayer();
+    convertDithering();
   }
 }
 
@@ -640,6 +664,63 @@ document.body.onload = () => {
   initPaintTools();
   updateButtonStatus();
   checkDebugMode();
+
+  canvas.addEventListener('wheel', function(e) {
+    if(!origLoadedImage) return; //没有加载图片，滚轮直接忽略
+    e.preventDefault();
+
+    if(e.deltaY < 0){
+        imgScale += IMG_SCALE_STEP;
+    }else{
+        imgScale -= IMG_SCALE_STEP;
+    }
+    imgScale = Math.max(IMG_SCALE_MIN, Math.min(IMG_SCALE_MAX, imgScale));
+
+    // 更新界面显示缩放百分比（图片图层的scale）
+    const scaleInfoDom = document.getElementById('scaleInfo');
+    if(scaleInfoDom) scaleInfoDom.innerText = Math.round(imgScale*100)+"%";
+
+    redrawImageLayer(); //重绘：手绘文字不动，图片应用新scale/offset
+});
+// ==========新增图片拖拽 mousedown ==========
+    canvas.addEventListener('mousedown', function(e){
+        // 条件：必须有图片，并且**当前不是画笔、橡皮擦、文字工具**才允许拖拽图片
+        if(!origLoadedImage) return;
+        if(currentTool === "brush" || currentTool === "eraser" || currentTool === "text"){
+            return; //画笔模式，交给paint.js绘图，不启动拖拽
+        }
+        e.preventDefault();
+        isDragImage = true;
+        const rect = canvas.getBoundingClientRect();
+        dragStartMouseX = e.clientX - rect.left;
+        dragStartMouseY = e.clientY - rect.top;
+        // 保存拖拽开始瞬间图片偏移
+        dragStartOffsetX = imgOffsetX;
+        dragStartOffsetY = imgOffsetY;
+    });
+
+    // ==========鼠标移动，拖拽图片==========
+    canvas.addEventListener('mousemove', function(e){
+        if(!isDragImage || !origLoadedImage) return;
+        e.preventDefault();
+        const rect = canvas.getBoundingClientRect();
+        const mx = e.clientX - rect.left;
+        const my = e.clientY - rect.top;
+        //计算鼠标移动差值，叠加到图片offset
+        imgOffsetX = dragStartOffsetX + (mx - dragStartMouseX);
+        imgOffsetY = dragStartOffsetY + (my - dragStartMouseY);
+        redrawImageLayer();
+    });
+
+    // =========鼠标抬起 / 鼠标离开，结束拖拽=========
+    function endImageDrag(){
+        if(isDragImage){
+            isDragImage = false;
+        }
+    }
+    canvas.addEventListener('mouseup', endImageDrag);
+    canvas.addEventListener('mouseleave', endImageDrag);
+
 }
 async function showcourse()
 {
@@ -747,4 +828,119 @@ function invertCanvas() {
     }
     ctx.putImageData(imgData, 0, 0);
     addLog("画布已黑白反色（二值翻转，无二次抖动）");
+}
+
+/**
+ * 重置预览缩放（只重置视图，不改变画布像素）
+ */
+function resetView() {
+    viewScale = 1;
+    viewOffsetX = 0;
+    viewOffsetY = 0;
+    const scaleInfoDom = document.getElementById('scaleInfo');
+    if(scaleInfoDom) scaleInfoDom.innerText = "100%";
+    renderPreview(); // ←====新增
+}
+
+/**
+ * rotateCanvas：像素级旋转整个画布90°，交换宽高，手绘+文字+图片全部旋转
+ */
+function rotateCanvas() {
+    const temp = document.createElement('canvas');
+    const w = canvas.width, h = canvas.height;
+    temp.width = h;
+    temp.height = w;
+    const tctx = temp.getContext('2d');
+    tctx.translate(h / 2, w / 2);
+    tctx.rotate(Math.PI / 2);
+    tctx.drawImage(canvas, -w / 2, -h / 2);
+
+    canvas.width = h;
+    canvas.height = w;
+    width = h;
+    height = w;
+
+    ctx.drawImage(temp, 0, 0);
+    redrawTextElements();
+    redrawLineSegments();
+    addLog("画布整体已旋转90°，宽高已交换");
+    renderPreview(); // ←====新增
+}
+
+function rotateImageOnly() {
+    if (!origLoadedImage) {
+        alert("请先上传图片！");
+        return;
+    }
+    const w = origLoadedImage.width, h = origLoadedImage.height;
+    const tempImg = document.createElement('canvas');
+    tempImg.width = h;
+    tempImg.height = w;
+    const tctx = tempImg.getContext('2d');
+    tctx.translate(h / 2, w / 2);
+    tctx.rotate(Math.PI / 2);
+    tctx.drawImage(origLoadedImage, -w / 2, -h / 2);
+
+    origLoadedImage = tempImg;
+    addLog("导入图像旋转+90°（仅图片）");
+    redrawImageLayer();
+}
+
+/**
+ * 预览渲染函数：只做视图缩放平移，**不修改原始画布像素，不影响蓝牙下发**
+ * 注意：我们把原始真实画面临时存到 offscreen，预览只渲染变换后的副本
+ */
+let offscreenCanvas = null;
+function renderPreview(){
+    if(!offscreenCanvas){
+        offscreenCanvas = document.createElement('canvas');
+    }
+    // 把当前真实画布拷贝到离屏缓存（原始像素，不会被预览变换破坏）
+    offscreenCanvas.width = canvas.width;
+    offscreenCanvas.height = canvas.height;
+    const offCtx = offscreenCanvas.getContext('2d');
+    offCtx.drawImage(canvas,0,0);
+
+    // 清空屏幕显示的主画布
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+
+    // 应用预览视图变换
+    ctx.save();
+    ctx.translate(viewOffsetX, viewOffsetY);
+    ctx.scale(viewScale, viewScale);
+
+    // 绘制原始画面
+    ctx.drawImage(offscreenCanvas,0,0);
+    ctx.restore();
+}
+function redrawImageLayer(){
+    if(!origLoadedImage) return;
+
+    //保存画布状态
+    ctx.save();
+    ctx.fillStyle = "white";
+    ctx.fillRect(0,0,canvas.width,canvas.height);
+
+    //第一步：重绘手绘、文字（完全不受图片缩放影响）
+    redrawTextElements();
+    redrawLineSegments();
+
+    //第二步：绘制【经过缩放偏移变换的图片图层】
+    ctx.save();
+    //图片原点偏移
+    ctx.translate(imgOffsetX, imgOffsetY);
+    ctx.scale(imgScale, imgScale);
+    ctx.drawImage(origLoadedImage,0,0);
+    ctx.restore();
+
+    ctx.restore();
+}
+function resetImageTransform(){
+    if(!origLoadedImage) return;
+    imgScale = 1.0;
+    imgOffsetX = 0;
+    imgOffsetY = 0;
+    const scaleInfoDom = document.getElementById('scaleInfo');
+    if(scaleInfoDom) scaleInfoDom.innerText = "100%";
+    redrawImageLayer();
 }
